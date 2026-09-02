@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  OFFICER
+}
+
+enum RackStatus {
+  AVAILABLE
+  OCCUPIED
+  INACTIVE
+}
+
+enum TransactionStatus {
+  ACTIVE
+  COMPLETED
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  username     String        @unique
+  passwordHash String
+  role         UserRole      @default(OFFICER)
+
+  transactions Transaction[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Rack {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  status       RackStatus    @default(AVAILABLE)
+
+  transactions Transaction[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  ticketCode  String   @unique
+  qrToken     String   @unique
+  plateNumber String
+
+  rackId      Int
+  officerId   Int
+
+  reportId    Int?
+
+  status      TransactionStatus
+
+  checkInAt  DateTime  @default(now())
+  checkOutAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rack    Rack        @relation(fields: [rackId], references: [id])
+  officer User        @relation(fields: [officerId], references: [id])
+  report  DailyReport? @relation(fields: [reportId], references: [id])
+}
+
+model DailyReport {
+  id                   Int           @id @default(autoincrement())
+  reportDate           DateTime      @unique
+  totalTransactions    Int           @default(0)
+  completedTransactions Int          @default(0)
+  activeTransactions   Int           @default(0)
+
+  transactions         Transaction[]
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+}
